@@ -158,12 +158,8 @@ module Synapse
 
     # get the static server block 
     def get_server_base_config
-      backend_conf = @opts['backend_conf']
-      if backend_conf['server']
-        return backend_conf['server']
-      else
-        return []
-      end
+      backend_conf = @opts['backend_conf'] || {}
+      return backend_conf
     end
 
     def generate_location_stanza(watcher,config)
@@ -173,7 +169,7 @@ module Synapse
       end
       stanza = [
         "\n\tlocation #{watcher.nginx['location']} {",
-        "\t\t proxy_pass http://#{watcher.name};",
+        "\t\tproxy_pass http://#{watcher.name};",
         config["options"].map { |c|
           "\t\t#{c}"
         },
@@ -190,7 +186,8 @@ module Synapse
       end
       stanza = [
         "\nserver {",
-        base_server_config.map { |c|
+        "\tserver_name #{base_server_config["server_name"]};",
+        base_server_config["server"].map { |c|
           "\t#{c}"
         },
         location_stanza,
