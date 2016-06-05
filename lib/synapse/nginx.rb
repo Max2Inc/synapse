@@ -163,18 +163,22 @@ module Synapse
     end
 
     def generate_location_stanza(watcher,config)
-      unless watcher.nginx.has_key?("location")
+      unless watcher.nginx.has_key?("location_block")
         log.warn "synapse: not generating the frontend config for watcher #{watcher.name} because it has no location defined"
         return []
       end
-      stanza = [
-        "\n\tlocation #{watcher.nginx['location']} {",
-        "\t\tproxy_pass http://#{watcher.name};",
-        config["options"].map { |c|
-          "\t\t#{c}"
-        },
-        "\t}"
-      ]
+      stanza = []
+      location_block = watcher.nginx["location_block"]
+      location_block.each do |block|
+        stanza << [
+          "\n\tlocation #{block['location']} {",
+          "\t\tproxy_pass http://#{watcher.name};",
+          block["location_options"].map { |c|
+            "\t\t#{c}"
+          },
+          "\t}"
+        ]
+      end
       return stanza
     end
     
