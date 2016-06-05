@@ -172,7 +172,7 @@ module Synapse
       location_block.each do |block|
         stanza << [
           "\n\tlocation #{block['location']} {",
-          "\t\tproxy_pass http://#{watcher.name};",
+          "\t\t#{block['proxy_pass']}" % [watcher.name],
           block["location_options"].map { |c|
             "\t\t#{c}"
           },
