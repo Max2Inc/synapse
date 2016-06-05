@@ -5,6 +5,7 @@ require "synapse/version"
 require "synapse/log"
 require "synapse/haproxy"
 require "synapse/file_output"
+require "synapse/nginx"
 require "synapse/service_watcher"
 
 
@@ -31,6 +32,14 @@ module Synapse
       end
 
       # configuration is initially enabled to configure on first loop
+      if opts.has_key?('nginx')
+        @config_generators << Nginx.new(opts['nginx'])
+      else
+        log.info "No NGINX config present"
+      end
+
+      #log.info opts
+
       @config_updated = true
 
       # Any exceptions in the watcher threads should wake the main thread so
