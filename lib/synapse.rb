@@ -21,9 +21,11 @@ module Synapse
 
       # create objects that need to be notified of service changes
       @config_generators = []
-      # create the haproxy config generator, this is mandatory
-      raise "haproxy config section is missing" unless opts.has_key?('haproxy')
-      @config_generators << Haproxy.new(opts['haproxy'])
+
+      # create the haproxy config generator
+      if opts.has_key?('haproxy') 
+        @config_generators << Haproxy.new(opts['haproxy'])
+      end
 
       # possibly create a file manifestation for services that do not
       # want to communicate via haproxy, e.g. cassandra
@@ -31,14 +33,13 @@ module Synapse
         @config_generators << FileOutput.new(opts['file_output'])
       end
 
+      #create the nginx config generator
       # configuration is initially enabled to configure on first loop
       if opts.has_key?('nginx')
         @config_generators << Nginx.new(opts['nginx'])
       else
         log.info "No NGINX config present"
       end
-
-      #log.info opts
 
       @config_updated = true
 
