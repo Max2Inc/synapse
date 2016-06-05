@@ -173,7 +173,7 @@ module Synapse
       end
       stanza = [
         "\n\tlocation #{watcher.nginx['location']} {",
-        "\t\t proxy_pass #{watcher.name};",
+        "\t\t proxy_pass http://#{watcher.name};",
         config["options"].map { |c|
           "\t\t#{c}"
         },
