@@ -1,0 +1,24 @@
+  ##
+  # Mail [Notifier]
+  #
+  # The default delivery method for Mail Notifiers is 'SMTP'.
+  # See the documentation for other delivery options.
+  #
+  notify_by Mail do |mail|
+    mail.on_success           = true
+    mail.on_warning           = true
+    mail.on_failure           = true
+
+    mail.from                 = "<%= config['from'] %>"
+    mail.to                   = "<%= config['to'] %>"
+    mail.cc                   = "<%= config['cc'] %>"
+    mail.bcc                  = "<%= config['bcc'] %>"
+    mail.reply_to             = "<%= config['reply_to'] %>"
+    mail.address              = "<%= config['address'] %>"
+    mail.port                 = <%= config['port'] %>
+    mail.domain               = "<%= config['domain'] %>"
+    mail.user_name            = "<%= config['user_name'] %>"
+    mail.password             = "<%= config['password'] %>"
+    mail.authentication       = "<%= config['authentication'] %>"
+    mail.encryption           = "<%= config['encryption'] %>"
+  end

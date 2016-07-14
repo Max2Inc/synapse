@@ -1,0 +1,18 @@
+  ##
+  # MySQL [Database]
+  #
+  database MySQL do |db|
+    # To dump all databases, set `db.name = :all` (or leave blank)
+    db.name               = "<%= config['database'] %>"
+    db.username           = "<%= config['username'] %>"
+    db.password           = "<%= config['password'] %>"
+    db.host               = "<%= config['host'] %>"
+    db.port               = <%= config['port'] %>
+    db.socket             = "<%= config['socket'] %>"
+    # Note: when using `skip_tables` with the `db.name = :all` option,
+    # table names should be prefixed with a database name.
+    # e.g. ["db_name.table_to_skip", ...]
+    db.skip_tables        = <%= config['skip_tables'] %>
+    db.only_tables        = <%= config['only_tables'] %> 
+    db.additional_options = <%= config['options'] %>
+  end

@@ -4,6 +4,7 @@ require 'json'
 require "synapse/version"
 require "synapse/log"
 require "synapse/haproxy"
+require "synapse/backup"
 require "synapse/file_output"
 require "synapse/service_watcher"
 
@@ -21,8 +22,9 @@ module Synapse
       # create objects that need to be notified of service changes
       @config_generators = []
       # create the haproxy config generator, this is mandatory
-      raise "haproxy config section is missing" unless opts.has_key?('haproxy')
-      @config_generators << Haproxy.new(opts['haproxy'])
+      if opts.has_key?('haproxy')
+        @config_generators << Haproxy.new(opts['haproxy'])
+      end
 
       # possibly create a file manifestation for services that do not
       # want to communicate via haproxy, e.g. cassandra
@@ -30,6 +32,9 @@ module Synapse
         @config_generators << FileOutput.new(opts['file_output'])
       end
 
+      if opts.has_key?('backup')
+        @config_generators << Backup.new(opts['backup'])
+      end
       # configuration is initially enabled to configure on first loop
       @config_updated = true
 

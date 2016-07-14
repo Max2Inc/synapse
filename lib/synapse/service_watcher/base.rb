@@ -7,7 +7,7 @@ class Synapse::ServiceWatcher
 
     LEADER_WARN_INTERVAL = 30
 
-    attr_reader :name, :haproxy
+    attr_reader :name, :haproxy, :backup
 
     def initialize(opts={}, synapse)
       super()
@@ -37,6 +37,9 @@ class Synapse::ServiceWatcher
       unless @haproxy.include?('port')
         log.warn "synapse: service #{name}: haproxy config does not include a port; only backend sections for the service will be created; you must move traffic there manually using configuration in `extra_sections`"
       end
+
+      # the backup config
+      @backup = opts['backup']
 
       # set initial backends to default servers, if any
       @default_servers = opts['default_servers'] || []
@@ -117,7 +120,7 @@ class Synapse::ServiceWatcher
       # Aggregate and deduplicate all potential backend service instances.
       new_backends = (new_backends + @default_servers) if @keep_default_servers
       new_backends = new_backends.uniq {|b|
-        [b['host'], b['port'], b.fetch('name', '')]
+        [b['host'], b['port'], b.fetch('name', ''), b.fetch('backup', '')]
       }
 
       if new_backends.to_set == @backends.to_set

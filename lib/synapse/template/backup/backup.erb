@@ -1,0 +1,22 @@
+# encoding: utf-8
+
+##
+## Backup Generated: mysql_backup
+## Once configured, you can run the backup with the following command:
+##
+## $ backup perform -t mysql_backup [-c <path_to_configuration_file>]
+##
+## For more information about Backup's components, see the documentation at:
+## http://backup.github.io/backup
+##
+Model.new(:<%= name %>, 'Description for <%= name %>') do
+<%= databasase_stanza %>
+<%= storages_stanza %>
+<% if gzip %>
+  ##
+  # Gzip [Compressor]
+  #
+  compress_with Gzip
+<% end %>
+<%= notifiers_stanza %>
+end
