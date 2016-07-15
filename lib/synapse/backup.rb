@@ -153,7 +153,7 @@ module Synapse
       template_dir = "template/backup"
       template = "#{current_dir}/#{template_dir}/#{template_file}"
       
-      erb = ERB.new(File.read(template))
+      erb = ERB.new(File.read(template), nil, '-')
       stanza = erb.result(binding)
 
       return stanza
@@ -164,7 +164,7 @@ module Synapse
       template_dir = "template/backup"
       template = "#{current_dir}/#{template_dir}/backup.erb"
  
-      erb = ERB.new(File.read(template))
+      erb = ERB.new(File.read(template), nil, '-')
       stanza = erb.result(binding)
 
       return stanza
