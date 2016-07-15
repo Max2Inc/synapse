@@ -27,6 +27,7 @@
   },
   "backup": {
     "run_command": "backup perform",
+    "config_file": "/etc/backup/config.rb",
     "do_writes": true,
     "do_crons": true
   }

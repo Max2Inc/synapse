@@ -85,8 +85,8 @@ module Synapse
         write_config(final_config, backup_conf_file)
 
         # generate cron job config 
-        run_command = "#{@opts['run_command']} --trigger #{name}"
-        cron_config = "#{watcher.backup['cron']} #{run_command}"
+        run_command = "#{@opts['run_command']} --config-file #{@opts['config_file']} --trigger #{name}"
+        cron_config = "#{watcher.backup['cron']} #{run_command} > /dev/null 2>&1"
 
         if @opts['do_cron']
           write_config(cron_config, cron_conf_file)
