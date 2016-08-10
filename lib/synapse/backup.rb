@@ -136,10 +136,16 @@ module Synapse
 
     def parse_watcher_config(watcher)
       config = Hash.new{|config,key| config[key]=Hash.new(&config.default_proc) } 
+      backup = Hash.new
       # generate database sections
-      config['databases'] = watcher.backends[0]['backup']['databases']
-      config['storages'] = watcher.backends[0]['backup']['storages']
-      config['notifiers'] = watcher.backends[0]['backup']['notifiers']
+      watcher.backends.each do |backend|
+        next unless backend['backup'] 
+        backup = backend['backup']
+      end
+
+      config['databases'] = backup['databases']
+      config['storages'] = backup['storages']
+      config['notifiers'] = backup['notifiers']
 
       # generate location section
       #config["location"]["name"] = watcher.nginx["location"] || ""
