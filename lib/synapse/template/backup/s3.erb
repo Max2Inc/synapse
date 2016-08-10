@@ -3,10 +3,12 @@
   #
   store_with S3 do |s3|
     # AWS Credentials
-    s3.access_key_id     = "my_access_key_id"
-    s3.secret_access_key = "my_secret_access_key"
+    # s3.access_key_id     = "my_access_key_id"
+    # s3.secret_access_key = "my_secret_access_key"
     # Or, to use a IAM Profile:
-    # s3.use_iam_profile = true
+    <%- if config['use_iam_profile'] -%>
+    s3.use_iam_profile = true
+    <%- end -%>
 
     s3.region            = "<%= config['region'] %>"
     s3.bucket            = "<%= config['bucket'] %>"
