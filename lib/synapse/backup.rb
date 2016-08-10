@@ -71,14 +71,13 @@ module Synapse
         @watcher_configs[watcher.name] = parse_watcher_config(watcher)
         backup_conf_file = watcher.backup['backup_conf_file']
         cron_conf_file = watcher.backup['cron_conf_file']
-        types = watcher.backends[0]['backup']
         gzip = watcher.backup['gzip']
         name = watcher.name
 
         # generate backup config
-        databases_stanza = generate_stanza("#{types['databases']['type']}.erb", @watcher_configs[watcher.name]['databases'])
-        storages_stanza = generate_stanza("#{types['storages']['type']}.erb", @watcher_configs[watcher.name]['storages'])
-        notifiers_stanza = generate_stanza("#{types['notifiers']['type']}.erb", @watcher_configs[watcher.name]['notifiers'])
+        databases_stanza = generate_stanza("#{@backup['databases']['type']}.erb", @watcher_configs[watcher.name]['databases'])
+        storages_stanza = generate_stanza("#{@backup['storages']['type']}.erb", @watcher_configs[watcher.name]['storages'])
+        notifiers_stanza = generate_stanza("#{@backup['notifiers']['type']}.erb", @watcher_configs[watcher.name]['notifiers'])
         final_config = generate_backup(name, databases_stanza, storages_stanza, notifiers_stanza, gzip)
         log.info "config array is #{final_config}"
 
@@ -136,16 +135,15 @@ module Synapse
 
     def parse_watcher_config(watcher)
       config = Hash.new{|config,key| config[key]=Hash.new(&config.default_proc) } 
-      backup = Hash.new
       # generate database sections
       watcher.backends.each do |backend|
         next unless backend['backup'] 
-        backup = backend['backup']
+        @backup = backend['backup']
       end
 
-      config['databases'] = backup['databases']
-      config['storages'] = backup['storages']
-      config['notifiers'] = backup['notifiers']
+      config['databases'] = @backup['databases']
+      config['storages'] = @backup['storages']
+      config['notifiers'] = @backup['notifiers']
 
       # generate location section
       #config["location"]["name"] = watcher.nginx["location"] || ""
