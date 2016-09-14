@@ -14,17 +14,11 @@
     # e.g. ["db_name.table_to_skip", ...]
     <%- if config['skip_tables'] -%>
     db.skip_tables        = <%= config['skip_tables'] %>
-    <%- else -%>
-    #db.skip_tables        = ["skip", "these", "tables"]
     <%- end -%>
     <%- if config['only_tables'] -%>
     db.only_tables        = <%= config['only_tables'] %> 
-    <%- else -%>
-    #db.only_tables        = ["only", "these" "tables"]
     <%- end -%>
     <%- if config['options'] -%>
     db.additional_options = <%= config['options'] %>
-    <%- else -%>
-    #db.additional_options = ["--quick", "--single-transaction"]
     <%- end -%>
   end

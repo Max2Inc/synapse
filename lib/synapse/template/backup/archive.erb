@@ -1,0 +1,16 @@
+  ##
+  # Archive
+  #
+  archive :my_archive do |archive|
+    <%- if config['root'] -%>
+    archive.root '<%= config['root'] %>'
+    <%- end -%>
+    # add a file
+    <%- config['add'].each do |add| -%>
+    archive.add '<%= add %>'
+    <%- end -%>
+    # exclude a file
+    <%- config['exclude'].each do |exclude| -%>
+        archive.exclude '<%= exclude %>'
+    <%- end -%>
+  end

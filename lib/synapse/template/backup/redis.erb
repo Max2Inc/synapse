@@ -1,0 +1,22 @@
+  ##
+  # Redis [Database]
+  #
+  database Redis do |db|
+    db.mode               = <%= config['mode'] %>
+    # Full path to redis dump file for :copy mode.
+    db.rdb_path           = '<%= config['rdb_path'] %>'
+    # When :copy mode is used, perform a SAVE before
+    # copying the dump file specified by `rdb_path`.
+    db.invoke_save        = <%= config['invoke_save'] %>
+    db.host               = '<%= config['host'] %>'
+    db.port               = <%= config['port'] %>
+    <%- if config['socket'] -%>
+    db.socket             = '<%= config['socket'] %>'
+    <%- end -%>
+    <%- if config['password'] -%>
+    db.db.password        = '<%= config['password'] %>'
+    <%- end -%>
+    <%- if config['additional_options'] -%>
+    db.additional_options = <%= config['additional_options'] %>
+    <%- end -%>
+  end
