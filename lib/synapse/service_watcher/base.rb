@@ -6,8 +6,7 @@ class Synapse::ServiceWatcher
     include Synapse::Logging
 
     LEADER_WARN_INTERVAL = 30
-
-    attr_reader :name, :haproxy, :backup
+    attr_reader :name, :haproxy, :nginx, :backup
 
     def initialize(opts={}, synapse)
       super()
@@ -25,7 +24,8 @@ class Synapse::ServiceWatcher
 
       @leader_election = opts['leader_election'] || false
       @leader_last_warn = Time.now - LEADER_WARN_INTERVAL
-
+      @nginx = opts['nginx']
+      log.info "nginx service watcher #{@nginx}"
       # the haproxy config
       @haproxy = opts['haproxy']
       @haproxy['server_options'] ||= ""

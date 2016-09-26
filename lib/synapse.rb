@@ -6,6 +6,7 @@ require "synapse/log"
 require "synapse/haproxy"
 require "synapse/backup"
 require "synapse/file_output"
+require "synapse/nginx"
 require "synapse/service_watcher"
 
 
@@ -21,8 +22,8 @@ module Synapse
 
       # create objects that need to be notified of service changes
       @config_generators = []
-      # create the haproxy config generator, this is mandatory
-      if opts.has_key?('haproxy')
+      # create the haproxy config generator
+      if opts.has_key?('haproxy') 
         @config_generators << Haproxy.new(opts['haproxy'])
       end
 
@@ -35,6 +36,14 @@ module Synapse
       if opts.has_key?('backup')
         @config_generators << Backup.new(opts['backup'])
       end
+
+      #create the nginx config generator
+      if opts.has_key?('nginx')
+        @config_generators << Nginx.new(opts['nginx'])
+      else
+        log.info "No NGINX config present"
+      end
+      
       # configuration is initially enabled to configure on first loop
       @config_updated = true
 
