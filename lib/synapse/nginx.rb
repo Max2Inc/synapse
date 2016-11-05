@@ -174,7 +174,7 @@ module Synapse
           "\n\tlocation #{block['location']} {",
           "\t\t#{block['proxy_pass']}" % [watcher.name],
           block["location_options"].map { |c|
-            "\t\t#{c} % [watcher.name]"
+            "\t\t#{c}" % [watcher.name]
           },
           "\t}"
         ]
