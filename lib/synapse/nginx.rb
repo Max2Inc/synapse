@@ -173,7 +173,7 @@ module Synapse
         stanza << [
           "\n\tlocation #{block['location']} {",
           "\t\t#{block['proxy_pass']}" % [watcher.name],
-          block["location_options"].map { |c|
+          block["location_options"].try(:map) { |c|
             "\t\t#{c}" % [watcher.name]
           },
           "\t}"
