@@ -78,6 +78,9 @@ module Synapse
 
     # generates the configuration for updating
     def generate_config(watchers)
+      main_stanza = []
+      events_stanza = []
+      http_stanza = []
       upstream_stanza = []
       location_stanza = []
       server_stanza = []
@@ -90,9 +93,20 @@ module Synapse
         upstream_stanza << generate_upstream_stanza(watcher, @watcher_configs[watcher.name]['upstream']) 
         location_stanza << generate_location_stanza(watcher,@watcher_configs[watcher.name]['location'])
       end
+
+      main_config = get_main_config
+      main_stanza = generate_main_stanza(main_config)
+
+      event_config = get_event_config
+      events_stanza = generate_event_stanza(event_config)
+
+      http_config = get_http_config
+      http_stanza = generate_http_stanza(http_config)
+
       base_server_config = get_server_base_config
       server_stanza = generate_server_stanza(location_stanza,base_server_config)
-      final_config = upstream_stanza << server_stanza 
+      
+      final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza 
       log.info "config array is #{final_config}"
 
       return final_config
@@ -162,6 +176,24 @@ module Synapse
       return backend_conf
     end
 
+    # get the static main block 
+    def get_main_config
+      main_conf = @opts['main'] || {}
+      return main_conf
+    end
+
+    # get the static event block 
+    def get_event_config
+      event_conf = @opts['events'] || {}
+      return event_conf
+    end    
+
+    # get the static http block 
+    def get_http_config
+      http_conf = @opts['http'] || {}
+      return http_conf
+    end
+
     def generate_location_stanza(watcher,config)
       unless watcher.nginx.has_key?("location_block")
         log.warn "synapse: not generating the frontend config for watcher #{watcher.name} because it has no location defined"
@@ -182,6 +214,46 @@ module Synapse
       return stanza
     end
     
+    def generate_main_stanza(main_config)
+      if main_config.empty?
+        return []
+      end
+      stanza = [
+        main_config.map { |c|
+          "\n#{c}"  
+        }
+      ]
+      return stanza
+    end
+
+    def generate_event_stanza(event_config)
+      if event_config.empty?
+        return []
+      end
+      stanza = [
+        "\nevents {",
+        event_config.map { |c|
+          "\t#{c}"  
+        },
+        "}"
+      ]
+      return stanza
+    end
+
+    def generate_http_stanza(http_config)
+      if http_config.empty?
+        return []
+      end
+      stanza = [
+        "\nhttp {",
+        http_config.map { |c|
+          "\t#{c}"  
+        },
+        "}"
+      ]
+      return stanza
+    end
+
     #TODO: check for server and listen options
     def generate_server_stanza(location_stanza,base_server_config)
       if base_server_config.empty?
