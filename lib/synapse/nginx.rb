@@ -110,6 +110,7 @@ module Synapse
         final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza 
       else
         final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza << close_bracket 
+      end
       log.info "config array is #{final_config}"
 
       return final_config
