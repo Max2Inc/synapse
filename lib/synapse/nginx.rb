@@ -102,11 +102,14 @@ module Synapse
 
       http_config = get_http_config
       http_stanza = generate_http_stanza(http_config)
+      close_bracket = ["}"]
 
       base_server_config = get_server_base_config
       server_stanza = generate_server_stanza(location_stanza,base_server_config)
-      
-      final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza 
+      if http_stanza.empty?
+        final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza 
+      else
+        final_config = main_stanza << events_stanza << http_stanza << upstream_stanza << server_stanza << close_bracket 
       log.info "config array is #{final_config}"
 
       return final_config
@@ -248,8 +251,7 @@ module Synapse
         "\nhttp {",
         http_config.map { |c|
           "\t#{c}"  
-        },
-        "}"
+        }
       ]
       return stanza
     end
