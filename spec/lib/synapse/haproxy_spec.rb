@@ -1,16 +1,20 @@
 require 'spec_helper'
+require 'synapse/config_generator/haproxy'
 
 class MockWatcher; end;
 
-describe Synapse::Haproxy do
-  subject { Synapse::Haproxy.new(config['haproxy']) }
+describe Synapse::ConfigGenerator::Haproxy do
+  subject { Synapse::ConfigGenerator::Haproxy.new(config['haproxy']) }
 
   let(:mockwatcher) do
     mockWatcher = double(Synapse::ServiceWatcher)
     allow(mockWatcher).to receive(:name).and_return('example_service')
     backends = [{ 'host' => 'somehost', 'port' => 5555}]
     allow(mockWatcher).to receive(:backends).and_return(backends)
-    allow(mockWatcher).to receive(:haproxy).and_return({'server_options' => "check inter 2000 rise 3 fall 2"})
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'server_options' => "check inter 2000 rise 3 fall 2"}
+    })
+    allow(mockWatcher).to receive(:revision).and_return(1)
     mockWatcher
   end
 
@@ -19,7 +23,9 @@ describe Synapse::Haproxy do
     allow(mockWatcher).to receive(:name).and_return('example_service2')
     backends = [{ 'host' => 'somehost', 'port' => 5555, 'haproxy_server_options' => 'backup'}]
     allow(mockWatcher).to receive(:backends).and_return(backends)
-    allow(mockWatcher).to receive(:haproxy).and_return({'server_options' => "check inter 2000 rise 3 fall 2"})
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'server_options' => "check inter 2000 rise 3 fall 2"}
+    })
     mockWatcher
   end
 
@@ -28,27 +34,181 @@ describe Synapse::Haproxy do
     allow(mockWatcher).to receive(:name).and_return('example_service3')
     backends = [{ 'host' => 'somehost', 'port' => 5555}]
     allow(mockWatcher).to receive(:backends).and_return(backends)
-    allow(mockWatcher).to receive(:haproxy).and_return({'server_options' => "check inter 2000 rise 3 fall 2", 'cookie_value_method' => 'hash'})
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'server_options' => "check inter 2000 rise 3 fall 2", 'cookie_value_method' => 'hash'}
+    })
     mockWatcher
   end
 
   let(:mockwatcher_frontend) do
     mockWatcher = double(Synapse::ServiceWatcher)
     allow(mockWatcher).to receive(:name).and_return('example_service4')
-    allow(mockWatcher).to receive(:haproxy).and_return('port' => 2200)
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'port' => 2200}
+    })
+    mockWatcher
+  end
+
+  let(:mockwatcher_frontend_with_bind_options) do
+    mockWatcher = double(Synapse::ServiceWatcher)
+    allow(mockWatcher).to receive(:name).and_return('example_service4')
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {
+        'port' => 2200,
+      'bind_options' => 'ssl no-sslv3 crt /path/to/cert/example.pem ciphers ECDHE-ECDSA-CHACHA20-POLY1305'
+      }
+    })
     mockWatcher
   end
 
   let(:mockwatcher_frontend_with_bind_address) do
     mockWatcher = double(Synapse::ServiceWatcher)
     allow(mockWatcher).to receive(:name).and_return('example_service5')
-    allow(mockWatcher).to receive(:haproxy).and_return('port' => 2200, 'bind_address' => "127.0.0.3")
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'port' => 2200, 'bind_address' => "127.0.0.3"}
+    })
     mockWatcher
+  end
+
+  let(:mockwatcher_frontend_with_nil_port) do
+    mockWatcher = double(Synapse::ServiceWatcher)
+    allow(mockWatcher).to receive(:name).and_return('example_service6')
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'port' => nil, 'bind_address' => "unix@/foo/bar.sock"}
+    })
+    mockWatcher
+  end
+
+  let(:mockwatcher_disabled) do
+    mockWatcher = double(Synapse::ServiceWatcher)
+    allow(mockWatcher).to receive(:name).and_return('disabled_watcher')
+    backends = [{ 'host' => 'somehost', 'port' => 5555}]
+    allow(mockWatcher).to receive(:backends).and_return(backends)
+    allow(mockWatcher).to receive(:config_for_generator).and_return({
+      'haproxy' => {'port' => 2200, 'disabled' => true}
+    })
+    allow(mockWatcher).to receive(:revision).and_return(1)
+    mockWatcher
+  end
+
+  describe '#initialize' do
+    it 'succeeds on minimal config' do
+      conf = {
+        'global' => [],
+        'defaults' => [],
+        'do_writes' => false,
+        'do_reloads' => false,
+        'do_socket' => false
+      }
+      Synapse::ConfigGenerator::Haproxy.new(conf)
+      expect{Synapse::ConfigGenerator::Haproxy.new(conf)}.not_to raise_error
+    end
+
+    it 'validates req_pairs' do
+      req_pairs = {
+        'do_writes' => 'config_file_path',
+        'do_socket' => 'socket_file_path',
+        'do_reloads' => 'reload_command'
+      }
+      valid_conf = {
+        'global' => [],
+        'defaults' => [],
+        'do_reloads' => false,
+        'do_socket' => false,
+        'do_writes' => false
+      }
+
+      req_pairs.each do |key, value|
+        conf = valid_conf.clone
+        conf[key] = true
+        expect{Synapse::ConfigGenerator::Haproxy.new(conf)}.
+          to raise_error(ArgumentError, "the `#{value}` option is required when `#{key}` is true")
+      end
+
+    end
+
+    it 'properly defaults do_writes, do_socket, do_reloads' do
+      conf = {
+        'global' => [],
+        'defaults' => [],
+        'config_file_path' => 'test_file',
+        'socket_file_path' => 'test_socket',
+        'reload_command' => 'test_reload'
+      }
+
+      expect{Synapse::ConfigGenerator::Haproxy.new(conf)}.not_to raise_error
+      haproxy = Synapse::ConfigGenerator::Haproxy.new(conf)
+      expect(haproxy.opts['do_writes']).to eql(true)
+      expect(haproxy.opts['do_socket']).to eql(true)
+      expect(haproxy.opts['do_reloads']).to eql(true)
+    end
+
+    it 'complains when req_pairs are not passed at all' do
+      conf = {
+        'global' => [],
+        'defaults' => [],
+      }
+      expect{Synapse::ConfigGenerator::Haproxy.new(conf)}.to raise_error(ArgumentError)
+    end
   end
 
   describe '#name' do
     it 'returns haproxy' do
       expect(subject.name).to eq('haproxy')
+    end
+  end
+
+  describe 'disabled watcher' do
+    let(:watchers) { [mockwatcher, mockwatcher_disabled] }
+    let(:socket_file_path) { 'socket_file_path' }
+
+    before do
+      config['haproxy']['do_socket'] = true
+      config['haproxy']['socket_file_path'] = socket_file_path
+    end
+
+    it 'does not generate config' do
+      allow(subject).to receive(:parse_watcher_config).and_return({})
+      expect(subject).to receive(:generate_frontend_stanza).exactly(:once).with(mockwatcher, nil)
+      expect(subject).to receive(:generate_backend_stanza).exactly(:once).with(mockwatcher, nil)
+      subject.update_config(watchers)
+    end
+
+    context 'when configuration via the socket succeeds' do
+      before do
+        subject.instance_variable_set(:@restart_required, false)
+        allow(subject).to receive(:generate_config).exactly(:once).and_return 'mock_config'
+      end
+
+      it 'does not cause a restart due to the socket' do
+        mock_socket_output = "example_service,somehost:5555,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,DOWN,0,"
+        allow(subject).to receive(:talk_to_socket).with(socket_file_path, "show stat\n").and_return mock_socket_output
+
+        expect(subject).to receive(:talk_to_socket).exactly(:once).with(
+          socket_file_path, "enable server example_service/somehost:5555\n"
+        ).and_return "\n"
+
+        subject.update_config(watchers)
+
+        expect(subject.instance_variable_get(:@restart_required)).to eq false
+      end
+
+      it 'disables existing servers on the socket' do
+        mock_socket_output = "example_service,somehost:5555,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,DOWN,0,\ndisabled_watcher,somehost:5555,0,0,0,0,200,0,0,0,0,0,,0,0,0,0,UP,0,"
+        allow(subject).to receive(:talk_to_socket).with(socket_file_path, "show stat\n").and_return mock_socket_output
+        stub_const('Synapse::ConfigGenerator::Haproxy::HAPROXY_CMD_BATCH_SIZE', 1)
+
+        expect(subject).to receive(:talk_to_socket).exactly(:once).with(
+          socket_file_path, "enable server example_service/somehost:5555\n"
+        ).and_return "\n"
+        expect(subject).to receive(:talk_to_socket).exactly(:once).with(
+          socket_file_path, "disable server disabled_watcher/somehost:5555\n"
+        ).and_return "\n"
+
+        subject.update_config(watchers)
+
+        expect(subject.instance_variable_get(:@restart_required)).to eq false
+      end
     end
   end
 
@@ -66,15 +226,26 @@ describe Synapse::Haproxy do
     end
 
     context 'when we support socket updates' do
-      include_context 'generate_config is stubbed out'
+      let(:socket_file_path) { 'socket_file_path' }
       before do
         config['haproxy']['do_socket'] = true
-        config['haproxy']['socket_file_path'] = 'socket_file_path'
+        config['haproxy']['socket_file_path'] = socket_file_path
       end
 
+      include_context 'generate_config is stubbed out'
+
       it 'updates backends via the socket' do
-        expect(subject).to receive(:update_backends).with(watchers)
+        expect(subject).to receive(:update_backends_at).with(socket_file_path, watchers)
         subject.update_config(watchers)
+      end
+
+      context 'when we specify multiple stats sockets' do
+        let(:socket_file_path) { ['socket_file_path1', 'socket_file_path2'] }
+
+        it 'updates all of them' do
+          expect(subject).to receive(:update_backends_at).exactly(socket_file_path.count).times
+          subject.update_config(watchers)
+        end
       end
     end
 
@@ -83,7 +254,7 @@ describe Synapse::Haproxy do
       before { config['haproxy']['do_socket'] = false }
 
       it 'does not update the backends' do
-        expect(subject).to_not receive(:update_backends)
+        expect(subject).to_not receive(:update_backends_at)
         subject.update_config(watchers)
       end
     end
@@ -243,7 +414,12 @@ describe Synapse::Haproxy do
       context "when #{order_option} is specified for backend_order" do
         it 'generates backend stanza in correct order' do
           mockConfig = []
-          allow(mockwatcher_with_multiple_backends).to receive(:haproxy).and_return({'server_options' => "check inter 2000 rise 3 fall 2", 'backend_order' => order_option})
+          allow(mockwatcher_with_multiple_backends).to receive(:config_for_generator).and_return({
+            'haproxy' => {
+              'server_options' => "check inter 2000 rise 3 fall 2",
+              'backend_order' => order_option
+            }
+          })
           expect(subject.generate_backend_stanza(mockwatcher_with_multiple_backends, mockConfig)).to eql(multiple_backends_stanza_map[order_option])
         end
       end
@@ -268,6 +444,16 @@ describe Synapse::Haproxy do
   it 'generates frontend stanza ' do
     mockConfig = []
     expect(subject.generate_frontend_stanza(mockwatcher_frontend, mockConfig)).to eql(["\nfrontend example_service4", [], "\tbind localhost:2200", "\tdefault_backend example_service4"])
+  end
+
+  it 'generates frontend stanza with bind options ' do
+    mockConfig = []
+    expect(subject.generate_frontend_stanza(mockwatcher_frontend_with_bind_options, mockConfig)).to eql(["\nfrontend example_service4", [], "\tbind localhost:2200 ssl no-sslv3 crt /path/to/cert/example.pem ciphers ECDHE-ECDSA-CHACHA20-POLY1305", "\tdefault_backend example_service4"])
+  end
+
+  it 'generates frontend stanza with nil port' do
+    mockConfig= []
+    expect(subject.generate_frontend_stanza(mockwatcher_frontend_with_nil_port, mockConfig)).to eql(["\nfrontend example_service6", [], "\tbind unix@/foo/bar.sock", "\tdefault_backend example_service6"])
   end
 
   it 'respects frontend bind_address ' do
