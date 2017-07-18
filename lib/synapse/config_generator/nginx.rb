@@ -102,6 +102,8 @@ class Synapse::ConfigGenerator
 
             http = (@contexts['http'] || []).collect {|option| "\t#{option};"}
             stream = (@contexts['stream'] || []).collect {|option| "\t#{option};"}
+            server = (@contexts['server'] || []).collect {|option| "\t\t#{option};"}
+            proxy_info = []
 
             watchers.each do |watcher|
                 watcher_config = watcher.config_for_generator[name]
@@ -132,10 +134,20 @@ class Synapse::ConfigGenerator
                     else
                         raise ArgumentError, "synapse does not understand #{watcher_config['mode']} as a service mode"
                 end
-                section << @servers_cache[watcher.name]
+                proxy_info << @servers_cache[watcher.name]
                 section << @upstreams_cache[watcher.name]
             end
             
+            # generate server context along with proxy information
+            # this  resides inside http contxt 
+            server_stanza = [
+                "\tserver {",
+                server,
+                proxy_info,
+                "\t}"
+            ]
+            http << server_stanza
+
             unless http.empty?
                 new_config << 'http {'
                 new_config.concat(http.flatten)
@@ -200,11 +212,7 @@ class Synapse::ConfigGenerator
             log.debug "generate_server: watcher backends: #{watcher.backends}"
             upstream_name = watcher_config.fetch('upstream_name', watcher.name)
             stanza = [
-                "\tserver {",
-                watcher_config['server'].map {|c| "\t\t#{c};"},
-                servers.map {|c| "\t#{c};"},
-                generate_proxy(watcher_config['mode'], upstream_name, watcher),
-                "\t}",
+                generate_proxy(watcher_config['mode'], upstream_name, watcher)
             ]
         end
 
@@ -248,7 +256,7 @@ class Synapse::ConfigGenerator
                 end
                 stanza = [
                     "\t\tlocation #{block['location']} {",
-                    block['location_options'].map {|c| "\t\t\t#{c};"},
+                    (block['location_options'] || []).map {|c| "\t\t\t#{c};"},
                     value,
                     "\t\t}"
                 ]
