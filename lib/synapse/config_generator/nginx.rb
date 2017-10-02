@@ -254,6 +254,12 @@ class Synapse::ConfigGenerator
                     log.debug "synapse: not generating proxy for #{upstream_name} because no proxy is specified"
                     next
                 end
+
+                # don't add reverse proxy if the block is static
+                if block.has_key?('static') and block['static'] == true
+                    value = ""
+                end
+
                 stanza = [
                     "\t\tlocation #{block['location']} {",
                     (block['location_options'] || []).map {|c| "\t\t\t#{c};"},
