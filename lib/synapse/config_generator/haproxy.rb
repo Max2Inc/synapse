@@ -1083,9 +1083,9 @@ class Synapse::ConfigGenerator
           unless config.include?('mode tcp')
             b = case watcher_config['cookie_value_method']
             when 'hash'
-              b = "#{b} cookie #{Digest::SHA1.hexdigest(backend_name)}"
+              b = "#{b} check cookie #{Digest::SHA1.hexdigest(backend_name)}"
             else
-              b = "#{b} cookie #{backend_name}"
+              b = "#{b} check cookie #{backend_name}"
             end
           end
           b = "#{b} #{watcher_config['server_options']}" if watcher_config['server_options']
