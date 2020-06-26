@@ -1018,9 +1018,9 @@ module Synapse
           unless config.include?('mode tcp')
             b = case watcher.haproxy['cookie_value_method']
             when 'hash'
-              b = "#{b} cookie #{Digest::SHA1.hexdigest(backend_name)}"
+              b = "#{b} check cookie #{Digest::SHA1.hexdigest(backend_name)}"
             else
-              b = "#{b} cookie #{backend_name}"
+              b = "#{b} check cookie #{backend_name}"
             end
           end
           b = "#{b} #{watcher.haproxy['server_options']}" if watcher.haproxy['server_options']
